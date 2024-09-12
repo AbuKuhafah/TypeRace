@@ -9,22 +9,17 @@ function CountDown({ start, end, onCountdownComplete }) {
         const total = Date.parse(e) - Date.parse(new Date());
         const seconds = Math.floor((total / 1000) % 60);
         const minutes = Math.floor((total / 1000 / 60) % 60);
-        const hours = Math.floor((total / 1000 / 60 / 60) % 24);
         return {
             total,
-            hours,
             minutes,
             seconds,
         };
     };
 
     const startTimer = (e) => {
-        let { total, hours, minutes, seconds } = getTimeRemaining(e);
-
+        let { total, minutes, seconds } = getTimeRemaining(e);
         if (total >= 0) {
             setTimer(
-                (hours > 9 ? hours : "0" + hours) +
-                ":" +
                 (minutes > 9 ? minutes : "0" + minutes) +
                 ":" +
                 (seconds > 9 ? seconds : "0" + seconds)
@@ -45,20 +40,17 @@ function CountDown({ start, end, onCountdownComplete }) {
                 startTimer(e);
             }
         }, 1000);
-
         Ref.current = id;
     };
 
     const getDeadTime = () => {
-        if (end === false) {
-            let deadline = new Date();
-            deadline.setSeconds(deadline.getSeconds() + 15);
-            return deadline;
-        }
+        let deadline = new Date();
+        deadline.setSeconds(deadline.getSeconds() + 15);
+        return deadline;
     };
 
     useEffect(() => {
-        if (start === true && end === false) {
+        if (start && !end) {
             const deadline = getDeadTime();
             clearTimer(deadline);
             return () => {
@@ -66,20 +58,14 @@ function CountDown({ start, end, onCountdownComplete }) {
                     clearInterval(Ref.current);
                 }
             };
-        } else if (end === true) {
-            if (Ref.current) {
-                clearInterval(Ref.current);
-            }
+        } else if (end && Ref.current) {
+            clearInterval(Ref.current);
         }
     }, [start, end]);
 
-    const detailColorStyle = {
-        color: start ? 'white' : 'gray',
-    };
-
     return (
-        <div className='timer'>
-            <div className='timer-text' style={detailColorStyle}>
+        <div className={`timer ${start ? 'active' : ''} ${end ? 'finished' : ''}`}>
+            <div className='timer-text'>
                 <h2>{timer}</h2>
             </div>
         </div>

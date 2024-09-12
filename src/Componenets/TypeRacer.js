@@ -1,42 +1,31 @@
-import React from 'react'
-import { useState, useEffect, useRef } from 'react';
-import './typeRacer.css'
+import React, { useState, useEffect, useRef } from 'react';
+import './typeRacer.css';
 import CountDown from './CountDown';
+
 const TypeRacer = ({ fact }) => {
-
     const [startTime, setStartTime] = useState(null);
-
     const [keyList, setKeyList] = useState([]);
-
     const [factArray, setFactArray] = useState([]);
     const [inputColors, setInputColors] = useState([]);
-
     const [raceEnded, setRaceEnded] = useState(false);
-
     const [countDownStart, setCountDownStart] = useState(false);
-
-
     const inputRef = useRef(null);
 
     useEffect(() => {
         factToArray();
         inputRef.current.focus();
     }, [fact]);
-    
 
     const factToArray = () => {
         if (factArray.length <= 0) {
             var array = fact.split('');
-            console.log("array: " + array)
             setFactArray(array);
             setInputColors(Array(array.length).fill('gray'));
         }
-
     };
 
     const keyDown = (e) => {
         if (!raceEnded) {
-
             if (!startTime) {
                 setCountDownStart(true);
                 setStartTime((new Date()).getTime());
@@ -57,12 +46,6 @@ const TypeRacer = ({ fact }) => {
             compareArrays(factArray, keyList);
             raceEnd(factArray, keyList);
         }
-
-
-    };
-
-    const keyUp = (e) => {
-        const keyUpTime = (new Date()).getTime();
     };
 
 
@@ -72,26 +55,24 @@ const TypeRacer = ({ fact }) => {
             if (keyList[i] === undefined) {
                 newInputColors[i] = 'gray';
             } else if (factArray[i] !== keyList[i]) {
-                console.log("wrong key at " + keyList[i]);
                 newInputColors[i] = 'red';
             } else {
                 newInputColors[i] = 'white';
-
             }
         }
         setInputColors(newInputColors);
     };
-
-    function timeout(delay) {
-        return new Promise(res => setTimeout(res, delay));
-    }
 
     const raceEnd = async (factArray, keyList) => {
         if (factArray.length === keyList.length) {
             await timeout(50);
             setRaceEnded(true);
         }
-    }
+    };
+
+    const timeout = (delay) => {
+        return new Promise(res => setTimeout(res, delay));
+    };
 
     const calculateWordsPerMinute = () => {
         if (startTime) {
@@ -103,62 +84,56 @@ const TypeRacer = ({ fact }) => {
         return 0;
     };
 
+    const calculateAccuracy = () => {
+        if (startTime) {
+            let correctCount = 0;
+            for (let i = 0; i < factArray.length; i++) {
+                if (factArray[i] === keyList[i]) {
+                    correctCount++;
+                }
+            }
+            return (correctCount * 100) / factArray.length;
+        }
+        return 0;
+    };
+
     const calculateInputWidth = () => {
         const characterWidth = 10;
         const minWidth = 200;
-        const width = Math.max(fact.length * characterWidth, minWidth);
-        return width;
+        return Math.max(fact.length * characterWidth, minWidth);
     };
-
-    const calculateAccuracy = () => {
-
-        if (startTime) {
-            let count = 0;
-            for (let i = 0; i < factArray.length; i++) {
-                if (factArray[i] === keyList[i]) {
-                    count++;
-                }
-            }
-
-            const accuracy = (count * 100) / keyList.length;
-            return accuracy;
-        }
-        return 0;
-
-    }
 
     const handleTimer = () => {
         setRaceEnded(true);
-    }
+    };
+
+    const progress = (keyList.length / factArray.length) * 100;
+    const wordsPerMinute = calculateWordsPerMinute();
+    const accuracy = calculateAccuracy();
 
     const detailColorStyle = {
         color: raceEnded ? 'white' : 'gray',
     };
 
-    const wordsPerMinute = calculateWordsPerMinute();
-    const accuracy = calculateAccuracy();
-
-
-
     return (
         <div>
-            <CountDown start={countDownStart} end={raceEnded} onCountdownComplete={handleTimer}></CountDown>
-            <div className='border-container'>
+            <CountDown start={countDownStart} end={raceEnded} onCountdownComplete={handleTimer} />
+            <div className={`border-container ${raceEnded ? 'finished' : ''}`}>
                 <div>
                     <p className='details'>
-                        <label className="accuracy"
-                            style={detailColorStyle}
-                        > Accuracy: {accuracy.toFixed(2)}</label>
-                        <label className="wpm"
-                            style={detailColorStyle}
-                        >WPM: {wordsPerMinute.toFixed(2)}</label>
+                        <label className="accuracy" style={detailColorStyle}>
+                            Accuracy: {accuracy.toFixed(2)}%
+                        </label>
+                        <label className="wpm" style={detailColorStyle}>
+                            WPM: {wordsPerMinute.toFixed(2)}
+                        </label>
                     </p>
                 </div>
 
                 <div className='racer'>
                     {fact.split('').map((char, index) => (
-                        <span key={index} style={{ color: inputColors[index] }}>
-                            {char}
+                        <span key={index} className={inputColors[index] === 'white' ? 'correct' : (inputColors[index] === 'red' ? 'wrong' : '')}>
+                            {char === ' ' ? '\u00A0' : char}
                         </span>
                     ))}
                     <br />
@@ -167,22 +142,15 @@ const TypeRacer = ({ fact }) => {
                         type="text"
                         ref={inputRef}
                         disabled={raceEnded}
-                        onKeyDown={(e) => keyDown(e)}
-                        onKeyUp={() => keyUp()}
-
-                        style={{
-                            width: `${calculateInputWidth()}px`,
-
-                        }}
+                        onKeyDown={keyDown}
+                        style={{ width: `${calculateInputWidth()}px` }}
                     />
-
                 </div>
 
-
+                <div className="progress-bar" style={{ width: `${progress}%` }}></div>
             </div>
         </div>
+    );
+};
 
-    )
-}
-
-export default TypeRacer
+export default TypeRacer;
