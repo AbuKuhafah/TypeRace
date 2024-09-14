@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './typeRacer.css';
 import CountDown from './CountDown';
+import Retry from './Retry';
 
-const TypeRacer = ({ fact }) => {
+const TypeRacer = ({ fact, onRetry }) => {
     const [startTime, setStartTime] = useState(null);
     const [keyList, setKeyList] = useState([]);
     const [factArray, setFactArray] = useState([]);
     const [inputColors, setInputColors] = useState([]);
     const [raceEnded, setRaceEnded] = useState(false);
     const [countDownStart, setCountDownStart] = useState(false);
+    const [inputValue, setInputValue] = useState('');
+    const [timerReset, setTimerReset] = useState(false);
     const inputRef = useRef(null);
 
     useEffect(() => {
@@ -32,15 +35,11 @@ const TypeRacer = ({ fact }) => {
             }
             if (!(e.key === 'Shift') && !(e.key === 'Backspace') && !(e.key === 'Control') && !(e.key === 'Alt') && !(e.key === 'Escape') && !(e.key === 'Tab') && !(e.key === 'CapsLock')) {
                 keyList.push(e.key);
+                setInputValue((prevValue) => prevValue + e.key);
             } else if (e.key === 'Backspace') {
                 if (keyList.length > 0) {
                     keyList.pop();
-
-                    if (inputColors[keyList.length] === 'red') {
-                        const newInputColors = [...inputColors];
-                        newInputColors[keyList.length] = 'white';
-                        setInputColors(newInputColors);
-                    }
+                    setInputValue((prevValue) => prevValue.slice(0, -1));
                 }
             }
             compareArrays(factArray, keyList);
@@ -112,12 +111,26 @@ const TypeRacer = ({ fact }) => {
     const accuracy = calculateAccuracy();
 
     const detailColorStyle = {
-        color: raceEnded ? 'white' : 'gray',
+        color: raceEnded ? 'gray' : 'black',
+    };
+
+    const hadnleRetry = () => {
+        setStartTime(null);
+        setKeyList([]);
+        setFactArray([]);
+        setInputColors([]);
+        setRaceEnded(false);
+        setCountDownStart(false);
+        setTimerReset(true);
+        setInputValue('');
+        onRetry();
+        // factToArray();
+        inputRef.current.focus();
     };
 
     return (
         <div>
-            <CountDown start={countDownStart} end={raceEnded} onCountdownComplete={handleTimer} />
+            <CountDown start={countDownStart} end={raceEnded} onCountdownComplete={handleTimer} resetTimer={setTimerReset}/>
             <div className={`border-container ${raceEnded ? 'finished' : ''}`}>
                 <div>
                     <p className='details'>
@@ -143,12 +156,13 @@ const TypeRacer = ({ fact }) => {
                         ref={inputRef}
                         disabled={raceEnded}
                         onKeyDown={keyDown}
+                        value={inputValue}
                         style={{ width: `${calculateInputWidth()}px` }}
                     />
                 </div>
-
                 <div className="progress-bar" style={{ width: `${progress}%` }}></div>
             </div>
+            <Retry onRetry={hadnleRetry} inputRef={inputRef}></Retry>
         </div>
     );
 };

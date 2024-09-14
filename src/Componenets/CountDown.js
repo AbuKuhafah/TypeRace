@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './countDown.css';
 
-function CountDown({ start, end, onCountdownComplete }) {
+function CountDown({ start, end, onCountdownComplete, resetTimer }) {
     const Ref = useRef(null);
     const [timer, setTimer] = useState("00:00:15");
 
@@ -60,6 +60,8 @@ function CountDown({ start, end, onCountdownComplete }) {
             };
         } else if (end && Ref.current) {
             clearInterval(Ref.current);
+        } else if (resetTimer){
+            setTimer("00:00:15");
         }
     }, [start, end]);
 

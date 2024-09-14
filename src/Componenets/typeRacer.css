@@ -20,14 +20,14 @@ body {
     animation: blink 0.5s alternate infinite;
 }
 
-@keyframes blink {
+/* @keyframes blink {
     from {
         background-color: #d4edda;
     }
     to {
         background-color: #c3e6cb;
     }
-}
+} */
 
 .racer {
     font-size: 25px;
