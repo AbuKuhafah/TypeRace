@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import './typeRacer.css';
 import CountDown from './CountDown';
 import Retry from './Retry';
+import { saveRace } from '../data/repo';
+import Leaderboard from './LeaderBoard';
 
 const TypeRacer = ({ fact, onRetry }) => {
     const [startTime, setStartTime] = useState(null);
@@ -13,18 +15,21 @@ const TypeRacer = ({ fact, onRetry }) => {
     const [inputValue, setInputValue] = useState('');
     const [timerReset, setTimerReset] = useState(false);
     const inputRef = useRef(null);
+    const [totalKeyPresses, setTotalKeyPresses] = useState(0);
+    const [correctCount, setCorrectCount] = useState(0);
+    const [finalAccuracy, setFinalAccuracy] = useState(0);
+    const [finalWPM, setFinalWPM] = useState(0);
+    const [retryChecker, setRetryChecker] = useState(false)
 
     useEffect(() => {
         factToArray();
         inputRef.current.focus();
     }, [fact]);
 
-    const factToArray = () => {
-        if (factArray.length <= 0) {
-            var array = fact.split('');
-            setFactArray(array);
-            setInputColors(Array(array.length).fill('gray'));
-        }
+    const factToArray = async () => {
+        let array = fact.split('');
+        setFactArray(array);
+        setInputColors(Array(array.length).fill('gray'));
     };
 
     const keyDown = (e) => {
@@ -32,66 +37,79 @@ const TypeRacer = ({ fact, onRetry }) => {
             if (!startTime) {
                 setCountDownStart(true);
                 setStartTime((new Date()).getTime());
+                setRetryChecker(false);
             }
             if (!(e.key === 'Shift') && !(e.key === 'Backspace') && !(e.key === 'Control') && !(e.key === 'Alt') && !(e.key === 'Escape') && !(e.key === 'Tab') && !(e.key === 'CapsLock')) {
                 keyList.push(e.key);
+                setTotalKeyPresses(totalKeyPresses + 1);
                 setInputValue((prevValue) => prevValue + e.key);
             } else if (e.key === 'Backspace') {
                 if (keyList.length > 0) {
                     keyList.pop();
+                    setTotalKeyPresses(totalKeyPresses - 1);
                     setInputValue((prevValue) => prevValue.slice(0, -1));
                 }
             }
             compareArrays(factArray, keyList);
-            raceEnd(factArray, keyList);
+            getNewFact(factArray, keyList);
         }
     };
 
-
     const compareArrays = (factArray, keyList) => {
         const newInputColors = [...inputColors];
+        let newCorrectCount = correctCount;
+
         for (let i = 0; i < factArray.length; i++) {
             if (keyList[i] === undefined) {
                 newInputColors[i] = 'gray';
             } else if (factArray[i] !== keyList[i]) {
+                if (inputColors[i] === 'white') {
+                    newCorrectCount--;
+                }
                 newInputColors[i] = 'red';
             } else {
+                if (inputColors[i] !== 'white') {
+                    newCorrectCount++;
+                }
                 newInputColors[i] = 'white';
             }
         }
+        setCorrectCount(newCorrectCount);
         setInputColors(newInputColors);
     };
 
-    const raceEnd = async (factArray, keyList) => {
+    const getNewFact = async (factArray, keyList) => {
         if (factArray.length === keyList.length) {
             await timeout(50);
-            setRaceEnded(true);
+            setKeyList([]);
+            onRetry();
+            setFactArray([]);
+            setInputColors([]);
+            factToArray();
+            setInputValue('');
         }
     };
 
     const timeout = (delay) => {
-        return new Promise(res => setTimeout(res, delay));
+        return new Promise((res) => setTimeout(res, delay));
     };
 
     const calculateWordsPerMinute = () => {
         if (startTime) {
             const endTime = (new Date()).getTime();
             const elapsedMinutes = (endTime - startTime) / (60 * 1000);
-            const wpm = (((keyList.length + 1) / 5) / elapsedMinutes) || 0;
+            const wpm = (totalKeyPresses / 5) / elapsedMinutes || 0;
+            // setFinalWPM(wpm)
             return wpm;
         }
         return 0;
     };
 
     const calculateAccuracy = () => {
-        if (startTime) {
-            let correctCount = 0;
-            for (let i = 0; i < factArray.length; i++) {
-                if (factArray[i] === keyList[i]) {
-                    correctCount++;
-                }
-            }
-            return (correctCount * 100) / factArray.length;
+        if (totalKeyPresses > 0) {
+            let acc = (correctCount * 100) / totalKeyPresses;
+            // setFinalAccuracy(acc)
+            return acc;
         }
         return 0;
     };
@@ -102,16 +120,21 @@ const TypeRacer = ({ fact, onRetry }) => {
         return Math.max(fact.length * characterWidth, minWidth);
     };
 
-    const handleTimer = () => {
-        setRaceEnded(true);
-    };
+    
 
     const progress = (keyList.length / factArray.length) * 100;
     const wordsPerMinute = calculateWordsPerMinute();
     const accuracy = calculateAccuracy();
-
+    if(raceEnded){
+       saveRace(accuracy, wordsPerMinute);
+    }
+    
     const detailColorStyle = {
         color: raceEnded ? 'gray' : 'black',
+    };
+
+    const handleTimer = () => {
+        setRaceEnded(true);
     };
 
     const hadnleRetry = () => {
@@ -123,17 +146,20 @@ const TypeRacer = ({ fact, onRetry }) => {
         setCountDownStart(false);
         setTimerReset(true);
         setInputValue('');
+        setTotalKeyPresses(0);
+        setCorrectCount(0);
+        setRetryChecker(true);
         onRetry();
-        // factToArray();
         inputRef.current.focus();
     };
 
     return (
         <div>
-            <CountDown start={countDownStart} end={raceEnded} onCountdownComplete={handleTimer} resetTimer={setTimerReset}/>
+            <Leaderboard retryCheck={retryChecker}/>
+            <CountDown start={countDownStart} end={raceEnded} onCountdownComplete={handleTimer} resetTimer={setTimerReset} />
             <div className={`border-container ${raceEnded ? 'finished' : ''}`}>
                 <div>
-                    <p className='details'>
+                    <p className="details">
                         <label className="accuracy" style={detailColorStyle}>
                             Accuracy: {accuracy.toFixed(2)}%
                         </label>
@@ -143,15 +169,15 @@ const TypeRacer = ({ fact, onRetry }) => {
                     </p>
                 </div>
 
-                <div className='racer'>
+                <div className="racer">
                     {fact.split('').map((char, index) => (
-                        <span key={index} className={inputColors[index] === 'white' ? 'correct' : (inputColors[index] === 'red' ? 'wrong' : '')}>
+                        <span key={index} className={inputColors[index] === 'white' ? 'correct' : inputColors[index] === 'red' ? 'wrong' : ''}>
                             {char === ' ' ? '\u00A0' : char}
                         </span>
                     ))}
                     <br />
                     <input
-                        className='textField'
+                        className="textField"
                         type="text"
                         ref={inputRef}
                         disabled={raceEnded}

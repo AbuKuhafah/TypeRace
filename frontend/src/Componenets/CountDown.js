@@ -3,7 +3,7 @@ import './countDown.css';
 
 function CountDown({ start, end, onCountdownComplete, resetTimer }) {
     const Ref = useRef(null);
-    const [timer, setTimer] = useState("00:00:15");
+    const [timer, setTimer] = useState("00:00:30");
 
     const getTimeRemaining = (e) => {
         const total = Date.parse(e) - Date.parse(new Date());
@@ -28,7 +28,7 @@ function CountDown({ start, end, onCountdownComplete, resetTimer }) {
     };
 
     const clearTimer = (e) => {
-        setTimer("00:00:15");
+        setTimer("00:00:30");
         if (Ref.current) clearInterval(Ref.current);
 
         const id = setInterval(() => {
@@ -45,7 +45,7 @@ function CountDown({ start, end, onCountdownComplete, resetTimer }) {
 
     const getDeadTime = () => {
         let deadline = new Date();
-        deadline.setSeconds(deadline.getSeconds() + 15);
+        deadline.setSeconds(deadline.getSeconds() + 30);
         return deadline;
     };
 
@@ -61,7 +61,7 @@ function CountDown({ start, end, onCountdownComplete, resetTimer }) {
         } else if (end && Ref.current) {
             clearInterval(Ref.current);
         } else if (resetTimer){
-            setTimer("00:00:15");
+            setTimer("00:00:30");
         }
     }, [start, end]);
 
